@@ -49,10 +49,10 @@ namespace MaterialCreator
                 float tx = -m_Origin.X * sxc - m_Origin.Y * sys + m_Position.X;
                 float ty =  m_Origin.X * sxs - m_Origin.Y * syc + m_Position.Y;
 
-                m_Matrix = new Matrix(sxc   , sys   , 0.0f  , tx   ,  
-                                      -sxs  , syc   , 0.0f  , ty   ,   
-                                      0.0f  , 0.0f  , 1.0f  , 0.0f , 
-                                      0.0f  , 0.0f  , 0.0f  , 1.0f );
+                m_Matrix = new Matrix(sxc, -sxs, 0.0f, 0   ,
+                                     sys , syc , 0.0f, 0   ,
+                                     0.0f, 0.0f, 1.0f, 0.0f,
+                                     tx  , ty  , 0.0f, 1.0f );
 
 
                 m_NeedUpdate = false;
@@ -86,6 +86,21 @@ namespace MaterialCreator
         }
 
         /* Rotation */
+        public void SetRotation(float angle)
+        {
+            m_Rotation = angle % 360;
+
+            if (m_Rotation < 0)
+                m_Rotation += 360.0f;
+
+            m_NeedUpdate = true;
+        }
+
+        public void Rotate(float angle)
+        {
+            SetRotation(m_Rotation + angle);
+        }
+
 
         /* Scale */
         public void SetScale(float x, float y)
@@ -108,7 +123,21 @@ namespace MaterialCreator
 
         public void Scale(Vector2 v)
         {
-            SetScale(m_Scale.X + v.X, m_Scale.Y + v.Y);
+            SetPosition(m_Scale.X + v.X, m_Scale.Y + v.Y);
+        }
+
+        /* Origin */
+        public void SetOrigin(float x, float y)
+        {
+            m_NeedUpdate = true;
+
+            m_Origin.X = x;
+            m_Origin.Y = y;
+        }
+
+        public void SetOrigin(Vector2 v)
+        {
+            SetOrigin(v.X, v.Y);
         }
     }
 }

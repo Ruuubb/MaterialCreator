@@ -22,8 +22,11 @@ namespace MaterialCreator
         private static void Main()
         {
             var form = new RenderForm("SharpDX - MiniCube Direct3D11 Sample");
+            form.ClientSize = new System.Drawing.Size(1800, 900);
+            form.MaximizeBox = false;
 
-            // SwapChain description
+            
+
             var desc = new SwapChainDescription()
             {
                 BufferCount = 1,
@@ -37,23 +40,14 @@ namespace MaterialCreator
                 Usage = Usage.RenderTargetOutput
             };
 
-            // Used for debugging dispose object references
-            // Configuration.EnableObjectTracking = true;
-
-            // Disable throws on shader compilation errors
-            //Configuration.ThrowOnShaderCompileError = false;
-
-            // Create Device and SwapChain
             Device device;
             SwapChain swapChain;
             Device.CreateWithSwapChain(DriverType.Hardware, DeviceCreationFlags.None, desc, out device, out swapChain);
             var context = device.ImmediateContext;
 
-            // Ignore all windows events
             var factory = swapChain.GetParent<Factory>();
             factory.MakeWindowAssociation(form.Handle, WindowAssociationFlags.IgnoreAll);
-           
-            // Compile Vertex and Pixel shaders
+    
             var vertexShaderByteCode = ShaderBytecode.CompileFromFile(@"..\..\Shaders\MiniCube.fx", "VS", "vs_4_0");
             var vertexShader = new VertexShader(device, vertexShaderByteCode);
 
@@ -61,109 +55,123 @@ namespace MaterialCreator
             var pixelShader = new PixelShader(device, pixelShaderByteCode);
 
             var signature = ShaderSignature.GetInputSignature(vertexShaderByteCode);
-            // Layout from VertexShader input signature
             var layout = new InputLayout(device, signature, new[]
                     {
                         new InputElement("POSITION", 0, Format.R32G32B32A32_Float, 0, 0),
-                        new InputElement("COLOR", 0, Format.R32G32B32A32_Float, 16, 0)
+                        new InputElement("TEXCORD", 0, Format.R32G32_Float, 16, 0)
+                        //new InputElement("COLOR", 0, Format.R32G32B32A32_Float, 16, 0)
                     });
 
-            // Instantiate Vertex buiffer from vertex data
             var vertices = Buffer.Create(device, BindFlags.VertexBuffer, new[]
-                                  {
-                                      new Vector4(0.0f, 0.5f, 0.5f, 1.0f), new Vector4(1.0f, 0.0f, 0.0f, 1.0f),
-                                      new Vector4(0.5f, -0.5f, 0.5f, 1.0f), new Vector4(0.0f, 1.0f, 0.0f, 1.0f),
-                                      new Vector4(-0.5f, -0.5f, 0.5f, 1.0f), new Vector4(0.0f, 0.0f, 1.0f, 1.0f)
+                                  {/*
+                                      new Vector4(0f  , 0f    ,  0f, 1.0f),     new Vector4(1.0f, 0.0f, 0.0f, 1.0f),
+                                      new Vector4(0f  , 100f    ,  0f, 1.0f),   new Vector4(0.0f, 1.0f, 0.0f, 1.0f),
+                                      new Vector4(100f  ,100f  ,  0f, 1.0f),    new Vector4(0.0f, 0.0f, 1.0f, 1.0f),
+                                      new Vector4(100f  ,100f    ,  0f, 1.0f),  new Vector4(0.0f, 0.0f, 1.0f, 1.0f),
+                                      new Vector4(100f  , 0    ,  0f, 1.0f),    new Vector4(0.0f, 1.0f, 0.0f, 1.0f),
+                                      new Vector4(0  ,0  ,  0f, 1.0f),          new Vector4(1.0f, 0.0f, 0.0f, 1.0f) */
+                                      0  ,     0,  0,  1,       0,  0,
+                                      0  ,   100,  0,  1,       0,  1,
+                                      100,   100,  0,  1,       1,  1,
+                                      100,   100,  0,  1,       1,  1,
+                                      100,     0,  0,  1,       1,  0,
+                                      0  ,     0,  0,  1,       0,  0
+
                             });
 
-            // Create Constant Buffer
             var contantBuffer = new Buffer(device, Utilities.SizeOf<Matrix>(), ResourceUsage.Default, BindFlags.ConstantBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, 0);
 
-            // Prepare All the stages
             context.InputAssembler.InputLayout = layout;
             context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
-            context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertices, Utilities.SizeOf<Vector4>() * 2, 0));
+            context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertices, sizeof(float) * 6/*Utilities.SizeOf<Vector4>() * 2*/, 0));
             context.VertexShader.SetConstantBuffer(0, contantBuffer);
             context.VertexShader.Set(vertexShader);
             context.PixelShader.Set(pixelShader);
 
-            // Prepare matrices
             var view = Matrix.LookAtLH(new Vector3(0, 0, -1), new Vector3(0, 0, 0), Vector3.UnitY);
             Matrix proj = Matrix.Identity;
 
-            // Declare texture for rendering
             bool userResized = true;
             Texture2D backBuffer = null;
             RenderTargetView renderView = null;
 
-            // Setup handler on resize form
+            Transform tt = new Transform();
+
             form.UserResized += (sender, args) => userResized = true;
 
-            // Setup full screen mode change F5 (Full) F4 (Window)
+            bool Rotate = false;
+            
             form.KeyUp += (sender, args) =>
             {
                 if (args.KeyCode == Keys.F5)
-                    swapChain.SetFullscreenState(true, null);
+                    Rotate = false;
                 else if (args.KeyCode == Keys.F4)
-                    swapChain.SetFullscreenState(false, null);
+                    Rotate = true;
                 else if (args.KeyCode == Keys.Escape)
                     form.Close();
             };
 
-            Transform tt = new Transform();
-            tt.SetPosition(0, 0);
-            tt.SetScale(100, 100);
+            SamplerState Sampler;
+            Sampler = new SamplerState(device, new SamplerStateDescription()
+            {
+                Filter = Filter.MinMagMipLinear,
+                AddressU = TextureAddressMode.Clamp,
+                AddressV = TextureAddressMode.Clamp,
+                AddressW = TextureAddressMode.Clamp,
+                BorderColor = Color.Black,
+                ComparisonFunction = Comparison.Never,
+                MaximumAnisotropy = 16,
+                MipLodBias = 0,
+                MinimumLod = -float.MaxValue,
+                MaximumLod = float.MaxValue
+            });
 
-            // Main loop
+            Texture TestTex = new Texture();
+            TestTex.LoadFromFile(device, @"..\..\Textures\brick.jpg", "Bricks");
+
+            context.PixelShader.SetShaderResource(0, TestTex.TextureView);
+            context.PixelShader.SetSampler(0, Sampler);
+            
+            tt.SetPosition(000, 0);
+            //tt.SetScale(50, 50);
+            tt.SetOrigin(50,50);
+
             RenderLoop.Run(form, () =>
             {
-                // If Form resized
                 if (userResized)
                 {
-                    // Dispose all previous allocated resources
                     Utilities.Dispose(ref backBuffer);
                     Utilities.Dispose(ref renderView);
 
-                    // Resize the backbuffer
                     swapChain.ResizeBuffers(desc.BufferCount, form.ClientSize.Width, form.ClientSize.Height, Format.Unknown, SwapChainFlags.None);
 
-                    // Get the backbuffer from the swapchain
                     backBuffer = Texture2D.FromSwapChain<Texture2D>(swapChain, 0);
 
-                    // Renderview on the backbuffer
                     renderView = new RenderTargetView(device, backBuffer);
 
-                    // Setup targets and viewport for rendering
                     context.Rasterizer.SetViewport(new Viewport(0, 0, form.ClientSize.Width, form.ClientSize.Height, 0.0f, 1.0f));
                     context.OutputMerger.SetTargets( renderView);
 
-                    // Setup new projection matrix with correct aspect ratio
-                    proj = Matrix.OrthoLH((float)form.ClientSize.Width * 2, (float)form.ClientSize.Height * 2, -10, 10);
+                    proj = Matrix.OrthoLH((float)form.ClientSize.Width, (float)form.ClientSize.Height , -1, 10);
 
-                    // We are done resizing
                     userResized = false;
                 }
 
-                var viewProj = Matrix.Multiply(view, proj);
-                
-                // Clear views
                 context.ClearRenderTargetView(renderView, Color.Black);
 
-                // Update WorldViewProj Matrix
-                //tt.Move(0, 1);
-                var worldViewProj = tt.GetMatrix() * viewProj;
-
+                tt.Move(0.00f, 0.01f);
+                if(Rotate)
+                    tt.Rotate(0.1f);
+                var worldViewProj = tt.GetMatrix()* view * proj  ;
                 worldViewProj.Transpose();
-                context.UpdateSubresource(ref worldViewProj, contantBuffer);
-                
-                // Draw the cube
-                context.Draw(3, 0);
 
-                // Present!
+                context.UpdateSubresource(ref worldViewProj, contantBuffer);
+
+                context.Draw(6, 0);
+
                 swapChain.Present(0, PresentFlags.None);
             });
 
-            // Release all resources
             signature.Dispose();
             vertexShaderByteCode.Dispose();
             vertexShader.Dispose();
