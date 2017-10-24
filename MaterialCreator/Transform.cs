@@ -88,5 +88,27 @@ namespace MaterialCreator
         /* Rotation */
 
         /* Scale */
+        public void SetScale(float x, float y)
+        {
+            m_NeedUpdate = true;
+
+            m_Scale.X = x;
+            m_Scale.Y = y;
+        }
+
+        public void SetScale(Vector2 v)
+        {
+            SetScale(v.X, v.Y);
+        }
+
+        public void Scale(float x, float y)
+        {
+            SetScale(m_Scale.X + x, m_Scale.Y + y);
+        }
+
+        public void Scale(Vector2 v)
+        {
+            SetScale(m_Scale.X + v.X, m_Scale.Y + v.Y);
+        }
     }
 }

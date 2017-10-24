@@ -112,6 +112,7 @@ namespace MaterialCreator
 
             Transform tt = new Transform();
             tt.SetPosition(0, 0);
+            tt.SetScale(100, 100);
 
             // Main loop
             RenderLoop.Run(form, () =>
@@ -149,7 +150,7 @@ namespace MaterialCreator
                 context.ClearRenderTargetView(renderView, Color.Black);
 
                 // Update WorldViewProj Matrix
-                // tt.Move(0, 1);
+                //tt.Move(0, 1);
                 var worldViewProj = tt.GetMatrix() * viewProj;
 
                 worldViewProj.Transpose();
