@@ -79,8 +79,6 @@ namespace MaterialCreator
             // Create Constant Buffer
             var contantBuffer = new Buffer(device, Utilities.SizeOf<Matrix>(), ResourceUsage.Default, BindFlags.ConstantBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, 0);
 
-
-
             // Prepare All the stages
             context.InputAssembler.InputLayout = layout;
             context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
@@ -90,19 +88,13 @@ namespace MaterialCreator
             context.PixelShader.Set(pixelShader);
 
             // Prepare matrices
-            var view = Matrix.LookAtLH(new Vector3(0, 0, -5), new Vector3(0, 0, 0), Vector3.UnitY);
+            var view = Matrix.LookAtLH(new Vector3(0, 0, -1), new Vector3(0, 0, 0), Vector3.UnitY);
             Matrix proj = Matrix.Identity;
-
-            // Use clock
-            var clock = new Stopwatch();
-            clock.Start();
 
             // Declare texture for rendering
             bool userResized = true;
             Texture2D backBuffer = null;
             RenderTargetView renderView = null;
-            Texture2D depthBuffer = null;
-            DepthStencilView depthView = null;
 
             // Setup handler on resize form
             form.UserResized += (sender, args) => userResized = true;
@@ -118,8 +110,9 @@ namespace MaterialCreator
                     form.Close();
             };
 
-            Transform tt = new Transform() ;
+            Transform tt = new Transform();
             tt.SetPosition(0, 0);
+
             // Main loop
             RenderLoop.Run(form, () =>
             {
@@ -129,8 +122,6 @@ namespace MaterialCreator
                     // Dispose all previous allocated resources
                     Utilities.Dispose(ref backBuffer);
                     Utilities.Dispose(ref renderView);
-                    Utilities.Dispose(ref depthBuffer);
-                    Utilities.Dispose(ref depthView);
 
                     // Resize the backbuffer
                     swapChain.ResizeBuffers(desc.BufferCount, form.ClientSize.Width, form.ClientSize.Height, Format.Unknown, SwapChainFlags.None);
@@ -141,46 +132,25 @@ namespace MaterialCreator
                     // Renderview on the backbuffer
                     renderView = new RenderTargetView(device, backBuffer);
 
-                    // Create the depth buffer
-                    depthBuffer = new Texture2D(device, new Texture2DDescription()
-                    {
-                        Format = Format.D32_Float_S8X24_UInt,
-                        ArraySize = 1,
-                        MipLevels = 1,
-                        Width = form.ClientSize.Width,
-                        Height = form.ClientSize.Height,
-                        SampleDescription = new SampleDescription(1, 0),
-                        Usage = ResourceUsage.Default,
-                        BindFlags = BindFlags.DepthStencil,
-                        CpuAccessFlags = CpuAccessFlags.None,
-                        OptionFlags = ResourceOptionFlags.None
-                    });
-
-                    // Create the depth buffer view
-                    depthView = new DepthStencilView(device, depthBuffer);
-
                     // Setup targets and viewport for rendering
                     context.Rasterizer.SetViewport(new Viewport(0, 0, form.ClientSize.Width, form.ClientSize.Height, 0.0f, 1.0f));
-                    context.OutputMerger.SetTargets(depthView, renderView);
+                    context.OutputMerger.SetTargets( renderView);
 
                     // Setup new projection matrix with correct aspect ratio
-                    proj = Matrix.PerspectiveFovLH((float)Math.PI / 4.0f, form.ClientSize.Width / (float)form.ClientSize.Height, 0.1f, 100.0f);
+                    proj = Matrix.OrthoLH((float)form.ClientSize.Width * 2, (float)form.ClientSize.Height * 2, -10, 10);
 
                     // We are done resizing
                     userResized = false;
                 }
 
-                var time = clock.ElapsedMilliseconds / 1000.0f;
-
                 var viewProj = Matrix.Multiply(view, proj);
                 
                 // Clear views
-                context.ClearDepthStencilView(depthView, DepthStencilClearFlags.Depth, 1.0f, 0);
                 context.ClearRenderTargetView(renderView, Color.Black);
 
                 // Update WorldViewProj Matrix
-                tt.Move(0, 0.01f);
-                var worldViewProj =  viewProj * tt.GetMatrix();
+                // tt.Move(0, 1);
+                var worldViewProj = tt.GetMatrix() * viewProj;
 
                 worldViewProj.Transpose();
                 context.UpdateSubresource(ref worldViewProj, contantBuffer);
@@ -201,8 +171,6 @@ namespace MaterialCreator
             vertices.Dispose();
             layout.Dispose();
             contantBuffer.Dispose();
-            depthBuffer.Dispose();
-            depthView.Dispose();
             renderView.Dispose();
             backBuffer.Dispose();
             context.ClearState();
