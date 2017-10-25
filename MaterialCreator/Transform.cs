@@ -49,11 +49,17 @@ namespace MaterialCreator
                 float tx = -m_Origin.X * sxc - m_Origin.Y * sys + m_Position.X;
                 float ty =  m_Origin.X * sxs - m_Origin.Y * syc + m_Position.Y;
 
-                m_Matrix = new Matrix(sxc, -sxs, 0.0f, 0   ,
-                                     sys , syc , 0.0f, 0   ,
-                                     0.0f, 0.0f, 1.0f, 0.0f,
-                                     tx  , ty  , 0.0f, 1.0f );
+                //THIS ONE IS FOR THE SHADER
+                /*  m_Matrix = new Matrix(sxc, -sxs, 0.0f, 0    ,
+                                       sys , syc , 0.0f, 0    ,
+                                       0.0f, 0.0f, 1.0f, 0.0f ,
+                                       tx  , ty  , 0.0f, 1.0f  );*/
 
+
+                m_Matrix = new Matrix(sxc   , sys   , 0.0f  , tx    ,
+                                      -sxs  , syc   , 0.0f  , ty    ,
+                                      0     , 0     , 1.0f  , 0.0f  ,
+                                      0     , 0     , 0     , 1.0f  );
 
                 m_NeedUpdate = false;
             }

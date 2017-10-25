@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Windows.Forms;
 
 using SharpDX;
@@ -25,7 +26,11 @@ namespace MaterialCreator
             form.ClientSize = new System.Drawing.Size(1800, 900);
             form.MaximizeBox = false;
 
-            
+            List<float> m = new List<float>();
+
+            float[] ttt = { 2f, 3f };
+
+            m.AddRange(ttt);
 
             var desc = new SwapChainDescription()
             {
@@ -55,36 +60,17 @@ namespace MaterialCreator
             var pixelShader = new PixelShader(device, pixelShaderByteCode);
 
             var signature = ShaderSignature.GetInputSignature(vertexShaderByteCode);
+
             var layout = new InputLayout(device, signature, new[]
                     {
                         new InputElement("POSITION", 0, Format.R32G32B32A32_Float, 0, 0),
-                        new InputElement("TEXCORD", 0, Format.R32G32_Float, 16, 0)
-                        //new InputElement("COLOR", 0, Format.R32G32B32A32_Float, 16, 0)
+                        new InputElement("COLOR",    0, Format.R32G32B32A32_Float, 16, 0),
+                        new InputElement("TEXCORD",  0, Format.R32G32_Float, 32, 0)
+                        
                     });
-
-            var vertices = Buffer.Create(device, BindFlags.VertexBuffer, new[]
-                                  {/*
-                                      new Vector4(0f  , 0f    ,  0f, 1.0f),     new Vector4(1.0f, 0.0f, 0.0f, 1.0f),
-                                      new Vector4(0f  , 100f    ,  0f, 1.0f),   new Vector4(0.0f, 1.0f, 0.0f, 1.0f),
-                                      new Vector4(100f  ,100f  ,  0f, 1.0f),    new Vector4(0.0f, 0.0f, 1.0f, 1.0f),
-                                      new Vector4(100f  ,100f    ,  0f, 1.0f),  new Vector4(0.0f, 0.0f, 1.0f, 1.0f),
-                                      new Vector4(100f  , 0    ,  0f, 1.0f),    new Vector4(0.0f, 1.0f, 0.0f, 1.0f),
-                                      new Vector4(0  ,0  ,  0f, 1.0f),          new Vector4(1.0f, 0.0f, 0.0f, 1.0f) */
-                                      0  ,     0,  0,  1,       0,  0,
-                                      0  ,   100,  0,  1,       0,  1,
-                                      100,   100,  0,  1,       1,  1,
-                                      100,   100,  0,  1,       1,  1,
-                                      100,     0,  0,  1,       1,  0,
-                                      0  ,     0,  0,  1,       0,  0
-
-                            });
-
-            var contantBuffer = new Buffer(device, Utilities.SizeOf<Matrix>(), ResourceUsage.Default, BindFlags.ConstantBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, 0);
 
             context.InputAssembler.InputLayout = layout;
             context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
-            context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertices, sizeof(float) * 6/*Utilities.SizeOf<Vector4>() * 2*/, 0));
-            context.VertexShader.SetConstantBuffer(0, contantBuffer);
             context.VertexShader.Set(vertexShader);
             context.PixelShader.Set(pixelShader);
 
@@ -95,7 +81,6 @@ namespace MaterialCreator
             Texture2D backBuffer = null;
             RenderTargetView renderView = null;
 
-            Transform tt = new Transform();
 
             form.UserResized += (sender, args) => userResized = true;
 
@@ -131,10 +116,12 @@ namespace MaterialCreator
 
             context.PixelShader.SetShaderResource(0, TestTex.TextureView);
             context.PixelShader.SetSampler(0, Sampler);
-            
-            tt.SetPosition(000, 0);
-            //tt.SetScale(50, 50);
-            tt.SetOrigin(50,50);
+
+            Graphics.SpriteBatch SB = new Graphics.SpriteBatch();
+            SB.Initialize(device);
+
+            Sprite TestSprite = new Sprite(TestTex.Info);
+            TestSprite.GetTransform.SetPosition(0, 0);
 
             RenderLoop.Run(form, () =>
             {
@@ -159,16 +146,37 @@ namespace MaterialCreator
 
                 context.ClearRenderTargetView(renderView, Color.Black);
 
-                tt.Move(0.00f, 0.01f);
-                if(Rotate)
-                    tt.Rotate(0.1f);
-                var worldViewProj = tt.GetMatrix()* view * proj  ;
+                if (Rotate)
+                    TestSprite.GetTransform.Move(0.01f, 0);
+
+                var worldViewProj =  view * proj * TestSprite.GetTransform.GetMatrix() ;
                 worldViewProj.Transpose();
 
-                context.UpdateSubresource(ref worldViewProj, contantBuffer);
+                SB.Begin(context);
 
-                context.Draw(6, 0);
+                float[] data = new float[40];
+                int index = 0;
 
+                foreach(Vertex i in TestSprite.Vertices)
+                {
+                    Vector2 rp = Vector2.TransformCoordinate(i.Position - new Vector2(form.ClientSize.Width /2, form.ClientSize.Height/2), worldViewProj);
+                    rp.ToArray().CopyTo(data, index);
+                    index += 2;
+                    data[index++] = 0f;
+                    data[index++] = 1f;
+                    
+                    i.Color.ToArray().CopyTo(data, index);
+                    index += 3;
+                    data[index++] = 1f;
+
+                    i.TexCoords.ToArray().CopyTo(data, index);
+                    index += 2;
+                }              
+
+                SB.Draw(data, TestSprite.TextureID);
+
+                SB.End();
+                
                 swapChain.Present(0, PresentFlags.None);
             });
 
@@ -177,9 +185,7 @@ namespace MaterialCreator
             vertexShader.Dispose();
             pixelShaderByteCode.Dispose();
             pixelShader.Dispose();
-            vertices.Dispose();
             layout.Dispose();
-            contantBuffer.Dispose();
             renderView.Dispose();
             backBuffer.Dispose();
             context.ClearState();

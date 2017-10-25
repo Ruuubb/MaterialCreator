@@ -13,7 +13,8 @@ namespace MaterialCreator
     {
         Texture2D m_Texture;
         ShaderResourceView m_TextureView;
- 
+        TextureInfo m_Info;
+
         public ShaderResourceView TextureView
         {
             get { return m_TextureView; }
@@ -24,11 +25,16 @@ namespace MaterialCreator
             get { return m_Texture; }
         }
 
+        public TextureInfo Info
+        {
+            get { return m_Info; }
+        }
+
         String m_Name;
 
         public Texture()
         {
-
+           
         }
 
         public bool LoadFromFile(Device device, String FileName, String Name)
@@ -39,7 +45,10 @@ namespace MaterialCreator
             m_Name = Name;
 
             Bitmap bitmap = (Bitmap)Bitmap.FromFile(FileName);
-           
+
+            m_Info.Rect = new SharpDX.RectangleF(0, 0, bitmap.Width, bitmap.Height);
+            m_Info.TextureID = 1; //TODO
+
             if (bitmap.PixelFormat != PixelFormat.Format32bppArgb)
             {
                 bitmap = bitmap.Clone(new Rectangle(0, 0, bitmap.Width, bitmap.Height), PixelFormat.Format32bppArgb);
