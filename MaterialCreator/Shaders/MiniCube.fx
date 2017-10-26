@@ -28,5 +28,5 @@ PS_IN VS(VS_IN input)
 
 float4 PS(PS_IN input) : SV_Target
 {
-	return picture.Sample(pictureSampler, input.tex);
+	return picture.Sample(pictureSampler, input.tex) ;
 }

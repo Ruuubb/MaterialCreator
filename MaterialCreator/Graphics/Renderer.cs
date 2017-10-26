@@ -54,7 +54,8 @@ namespace MaterialCreator.Graphics
         {
             get { return m_TexturePool; }
         }
-
+        ShaderBytecode vertexShaderByteCode;
+        ShaderBytecode pixelShaderByteCode;
         public bool Initialize(RenderForm Form)
         {
             var desc = new SwapChainDescription()
@@ -71,7 +72,11 @@ namespace MaterialCreator.Graphics
             Device.CreateWithSwapChain(DriverType.Hardware, DeviceCreationFlags.None, desc, out m_Device, out m_SwapChain);
             m_Context = m_Device.ImmediateContext;
 
-            m_SwapChain.ResizeBuffers(desc.BufferCount, Form.ClientSize.Width, Form.ClientSize.Height, Format.Unknown, SwapChainFlags.None);
+            //???
+            var factory = m_SwapChain.GetParent<Factory>();
+            factory.MakeWindowAssociation(Form.Handle, WindowAssociationFlags.IgnoreAll);
+
+            //m_SwapChain.ResizeBuffers(desc.BufferCount, Form.ClientSize.Width, Form.ClientSize.Height, Format.Unknown, SwapChainFlags.None);
 
             m_BackBuffer = Texture2D.FromSwapChain<Texture2D>(m_SwapChain, 0);
 
@@ -79,15 +84,13 @@ namespace MaterialCreator.Graphics
 
             // Create 2D vars
 
-            var vertexShaderByteCode = ShaderBytecode.CompileFromFile(@"..\..\Shaders\MiniCube.fx", "VS", "vs_4_0");
+            vertexShaderByteCode = ShaderBytecode.CompileFromFile(@"..\..\Shaders\MiniCube.fx", "VS", "vs_4_0");
             m_2DVertexShader = new VertexShader(m_Device, vertexShaderByteCode);
 
-            var pixelShaderByteCode = ShaderBytecode.CompileFromFile(@"..\..\Shaders\MiniCube.fx", "PS", "ps_4_0");
+            pixelShaderByteCode = ShaderBytecode.CompileFromFile(@"..\..\Shaders\MiniCube.fx", "PS", "ps_4_0");
             m_2DPixelShader = new PixelShader(m_Device, pixelShaderByteCode);
 
-            var signature = ShaderSignature.GetInputSignature(vertexShaderByteCode);
-
-            m_2DInputLayout = new InputLayout(m_Device, signature, new[]
+            m_2DInputLayout = new InputLayout(m_Device, ShaderSignature.GetInputSignature(vertexShaderByteCode), new[]
                     {
                         new InputElement("POSITION", 0, Format.R32G32B32A32_Float, 0, 0),
                         new InputElement("COLOR",    0, Format.R32G32B32A32_Float, 16, 0),
@@ -112,9 +115,12 @@ namespace MaterialCreator.Graphics
 
             // Set 2d context
             m_Context.Rasterizer.SetViewport(new Viewport(0, 0, Form.ClientSize.Width, Form.ClientSize.Height, 0.0f, 1.0f));
+
             m_Context.OutputMerger.SetTargets(m_RenderView);
+
             m_Context.InputAssembler.InputLayout = m_2DInputLayout;
             m_Context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
+
             m_Context.VertexShader.Set(m_2DVertexShader);
             m_Context.PixelShader.Set(m_2DPixelShader);
             m_Context.PixelShader.SetSampler(0, m_SamplerState);
@@ -148,8 +154,8 @@ namespace MaterialCreator.Graphics
         public void OnDraw(Sprite sp)
         {
             m_Context.ClearRenderTargetView(m_RenderView, Color.Black);
-
-            m_Context.VertexShader.SetShaderResource(0, m_TexturePool.GetView(sp.TextureID));
+            
+            m_Context.PixelShader.SetShaderResource(0, m_TexturePool.GetView(sp.TextureID));
 
             m_SpriteBatch.Begin(m_Context);
 
@@ -162,7 +168,7 @@ namespace MaterialCreator.Graphics
             foreach (Vertex i in sp.Vertices)
             {
                 Vector2 rp = Vector2.TransformCoordinate(i.Position, worldViewProj);
-                //rp -= new Vector2(1f, 1f);
+               // rp -= new Vector2(1f, 1f);
                 rp.ToArray().CopyTo(data, index);
                 index += 2;
                 data[index++] = 0f;
@@ -180,8 +186,7 @@ namespace MaterialCreator.Graphics
 
 
             m_SpriteBatch.End();
-
-
+           
             m_SwapChain.Present(0, PresentFlags.None);
         }
 

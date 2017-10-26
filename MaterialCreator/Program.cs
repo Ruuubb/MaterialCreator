@@ -55,13 +55,6 @@ namespace MaterialCreator
 
             Sprite TestSprite = new Sprite(Info);
 
-            //Graphics.SpriteBatch SB = new Graphics.SpriteBatch();
-            //SB.Initialize(device);
-
-            // Sprite TestSprite = new Sprite(TestTex.Info);
-            //TestSprite.GetTransform.SetPosition(0, 300);
-            //TestSprite.GetTransform.SetOrigin(0, TestTex.Info.Rect.Height);
-
             RenderLoop.Run(form, () =>
             {
                 Ren.OnDraw(TestSprite);
