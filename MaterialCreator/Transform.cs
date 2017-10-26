@@ -36,7 +36,7 @@ namespace MaterialCreator
         {
             if(m_NeedUpdate)
             {
-                float Angle = -m_Rotation * (float)Math.PI / 180f;
+                float Angle = m_Rotation * (float)Math.PI / 180f;
 
                 float Cosine = (float)Math.Cos(Angle);
                 float Sine = (float)Math.Sin(Angle);
@@ -49,7 +49,7 @@ namespace MaterialCreator
                 float tx = -m_Origin.X * sxc - m_Origin.Y * sys + m_Position.X;
                 float ty =  m_Origin.X * sxs - m_Origin.Y * syc + m_Position.Y;
 
-                //THIS ONE IS FOR THE SHADER
+                //THIS ONE IS FOR THE SHADER in dx11
                 /*  m_Matrix = new Matrix(sxc, -sxs, 0.0f, 0    ,
                                        sys , syc , 0.0f, 0    ,
                                        0.0f, 0.0f, 1.0f, 0.0f ,

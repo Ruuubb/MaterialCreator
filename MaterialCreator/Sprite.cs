@@ -40,7 +40,7 @@ namespace MaterialCreator
             m_Vertices = new Vertex[4] { new Vertex(), new Vertex(), new Vertex(), new Vertex() };
 ;        }
 
-        public Sprite(TextureInfo Info)
+        public Sprite(Graphics.TextureInfo Info)
         {
             m_TextCords = Info.Rect;
             m_TextureID = Info.TextureID;

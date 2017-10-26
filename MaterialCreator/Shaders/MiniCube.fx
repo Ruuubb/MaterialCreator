@@ -12,8 +12,6 @@ struct PS_IN
 	float2 tex : TEXCORD;
 };
 
-//float4x4 worldViewProj;
-
 Texture2D picture : register(t0);
 SamplerState pictureSampler : register(s0);
 
@@ -21,7 +19,6 @@ PS_IN VS(VS_IN input)
 {
 	PS_IN output = (PS_IN)0;
 
-	//output.pos = mul(input.pos, worldViewProj);
 	output.pos = input.pos;
 	output.tex = input.tex;
 	output.col = input.col;
@@ -31,6 +28,5 @@ PS_IN VS(VS_IN input)
 
 float4 PS(PS_IN input) : SV_Target
 {
-	//return input.col;
 	return picture.Sample(pictureSampler, input.tex);
 }

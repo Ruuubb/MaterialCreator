@@ -7,22 +7,31 @@ using SharpDX.DXGI;
 using SharpDX.Direct3D11;
 using Device = SharpDX.Direct3D11.Device;
 
-namespace MaterialCreator
+namespace MaterialCreator.Graphics
 {
     class Texture
     {
-        Texture2D m_Texture;
-        ShaderResourceView m_TextureView;
         TextureInfo m_Info;
 
-        public ShaderResourceView TextureView
+        Texture2D m_Texture;
+        ShaderResourceView m_TextureView;
+
+        public Texture(String Name, UInt32 ID)
         {
-            get { return m_TextureView; }
+            m_Info = new TextureInfo();
+
+            m_Info.Name = Name;
+            m_Info.TextureID = ID;
         }
 
-        public Texture2D TextureHandle
+        public UInt32 ID
         {
-            get { return m_Texture; }
+            get { return m_Info.TextureID; }
+        }
+
+        public String Name
+        {
+            get { return m_Info.Name; }
         }
 
         public TextureInfo Info
@@ -30,24 +39,19 @@ namespace MaterialCreator
             get { return m_Info; }
         }
 
-        String m_Name;
-
-        public Texture()
+        public ShaderResourceView View
         {
-           
+            get { return m_TextureView; }
         }
 
-        public bool LoadFromFile(Device device, String FileName, String Name)
+        public bool LoadFromFile(Device device, String FileName)
         {
             if (!File.Exists(FileName))
                 return false;
 
-            m_Name = Name;
-
             Bitmap bitmap = (Bitmap)Bitmap.FromFile(FileName);
 
             m_Info.Rect = new SharpDX.RectangleF(0, 0, bitmap.Width, bitmap.Height);
-            m_Info.TextureID = 1; //TODO
 
             if (bitmap.PixelFormat != PixelFormat.Format32bppArgb)
             {
@@ -72,8 +76,6 @@ namespace MaterialCreator
             bitmap.UnlockBits(data);
 
             m_TextureView = new ShaderResourceView(device, m_Texture);
-
-            
 
             return true;
         }

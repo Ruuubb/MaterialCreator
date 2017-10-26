@@ -119,7 +119,7 @@ namespace MaterialCreator.Graphics
 
                 var dataBox = m_Context.MapSubresource(m_Vbo, MapMode.WriteDiscard, SharpDX.Direct3D11.MapFlags.None, out Stream);
 
-                Stream.WriteRange<float>(m_DataQueue, 0, m_QueueIndex);
+                Stream.WriteRange<float>(m_DataQueue, 0, m_QueueIndex );
 
                 m_Context.UnmapSubresource(m_Vbo, 0);
             }
@@ -131,9 +131,7 @@ namespace MaterialCreator.Graphics
                 Stream.WriteRange<UInt16>(m_IndicesQueue, 0, m_IndicesIndex);
 
                 m_Context.UnmapSubresource(m_Ibo, 0);
-            }
-
-            
+            }        
         }
 
         private void Draw()
